@@ -35,7 +35,8 @@ logger = logging.getLogger("ai_companion")
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-MAX_HISTORY = int(os.getenv("MAX_HISTORY", "12"))  # пар user/assistant у контексті
+# пар user/assistant у контексті
+MAX_HISTORY = int(os.getenv("MAX_HISTORY", "12"))
 
 if not TELEGRAM_TOKEN:
     raise SystemExit("Set TELEGRAM_BOT_TOKEN in .env")
@@ -80,8 +81,19 @@ RPG_PROMPT = (
 )
 
 TOXIC_HINTS = (
-    "idiot", "stupid", "fuck", "shit", "блять", "сука", "нахуй", "дебіл",
-    "мудак", "підор", "хуй", "еблан", "довбойоб",
+    "idiot",
+    "stupid",
+    "fuck",
+    "shit",
+    "блять",
+    "сука",
+    "нахуй",
+    "дебіл",
+    "мудак",
+    "підор",
+    "хуй",
+    "еблан",
+    "довбойоб",
 )
 
 
@@ -95,7 +107,9 @@ class Mode(str, Enum):
 class ChatState:
     mode: Mode = Mode.CHAT
     style_key: str | None = None
-    history: Deque[dict] = field(default_factory=lambda: deque(maxlen=MAX_HISTORY * 2))
+    history: Deque[dict] = field(
+        default_factory=lambda: deque(maxlen=MAX_HISTORY * 2),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -130,7 +144,9 @@ client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 
 
 async def ask_llm(state: ChatState, user_text: str) -> str:
-    messages: List[dict] = [{"role": "system", "content": system_prompt_for(state)}]
+    messages: List[dict] = [
+        {"role": "system", "content": system_prompt_for(state)},
+    ]
     messages.extend(list(state.history))
     messages.append({"role": "user", "content": user_text})
 
@@ -208,7 +224,9 @@ async def cmd_chat(message: Message) -> None:
     state.mode = Mode.CHAT
     state.style_key = None
     clear_history(message.chat.id)
-    await message.answer("Режим: звичайний чат із Neon. Glitch less, talk more.")
+    await message.answer(
+        "Режим: звичайний чат із Neon. Glitch less, talk more.",
+    )
 
 
 @dp.message(Command("rpg"))
@@ -221,7 +239,10 @@ async def cmd_rpg(message: Message) -> None:
         state,
         "Почни нову коротку пригоду. Я щойно зайшов у бар «Chrome & Rain».",
     )
-    await message.answer(f"🎲 *RPG увімкнено*\n\n{intro}", parse_mode="Markdown")
+    await message.answer(
+        f"🎲 *RPG увімкнено*\n\n{intro}",
+        parse_mode="Markdown",
+    )
 
 
 @dp.message(Command("style"))
@@ -229,7 +250,10 @@ async def cmd_style(message: Message) -> None:
     parts = (message.text or "").split(maxsplit=1)
     if len(parts) < 2 or parts[1].strip().lower() not in STYLE_PROMPTS:
         keys = ", ".join(STYLE_PROMPTS)
-        await message.answer(f"Формат: `/style <ключ>`\nДоступно: {keys}", parse_mode="Markdown")
+        await message.answer(
+            f"Формат: `/style <ключ>`\nДоступно: {keys}",
+            parse_mode="Markdown",
+        )
         return
 
     key = parts[1].strip().lower()
@@ -237,7 +261,10 @@ async def cmd_style(message: Message) -> None:
     state.mode = Mode.STYLE
     state.style_key = key
     clear_history(message.chat.id)
-    await message.answer(f"🎭 Стиль увімкнено: *{key}*. Кидай фразу — перефарбую.", parse_mode="Markdown")
+    await message.answer(
+        f"🎭 Стиль увімкнено: *{key}*. Кидай фразу — перефарбую.",
+        parse_mode="Markdown",
+    )
 
 
 @dp.message(F.text)
@@ -267,7 +294,9 @@ async def on_text(message: Message) -> None:
             reply = await ask_llm(state, text)
     except Exception:
         logger.exception("LLM call failed")
-        await message.answer("💥 Glitch на лінії з хмарою. Спробуй ще раз за хвилину.")
+        await message.answer(
+            "💥 Glitch на лінії з хмарою. Спробуй ще раз за хвилину.",
+        )
         return
 
     await message.answer(reply)
